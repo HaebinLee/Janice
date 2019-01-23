@@ -35,6 +35,11 @@
    * from_items는 많이 쓰이지 않아 앞으로 사라질 예정
 
   
+  #4 데이터프레임 파일로 저장하기 (to_csv)
+  df.to_csv('이름.csv', index=True, header=True, na_rep = '-')
+  - index, header는 True가 디폴트
+  - 데이터프레임에 None 값은 na로 비어있게 된다. 위는 na를 -로 채우라는 명령
+  
   
   
   
