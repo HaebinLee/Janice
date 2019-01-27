@@ -1,0 +1,129 @@
+#8 데이터 그룹 만들기
+
+groupby_major = df.groupby('major') #major를 기준으로 그룹화 
+groupby_major.groups #각 그룹내 데이터의 인덱스를 보여줌
+
+for name, group in groupby_major:
+    print(name + ": " + str(len(group))) #그룹 안 데이터 수
+    print(group) #그룹 내 데이터들
+    print() #그룹 간 라인 하나 추가
+    
+- group object to dataframe
+df_major_cnt = pd.DataFrame({'count' : groupby_major.size()}) #count라는 열 이름 아래에 과목&학생수가 한꺼번에 들어감
+df_major_cnt = pd.DataFrame({'count' : groupby_major.size()}).reset_index() #major, count가 열 이름으로 됨
+
+
+#9 중복 데이터 삭제하기 
+- check if there is duplicated row
+df.duplicated() #행 별로 순서대로 봐서 앞 행과 정확히 일치하는 게 있는지 False, True로 보여줌
+df = df.drop_duplicates() #Drop Duplicate
+
+df.duplicated(['name']) #name만 같은 행이 있는지
+df.drop_duplicates(['name'], keep='last') #name이 같은 행을 지워, 단 중복행 중 마지막 행을 놔둬 (first가 디폴트)
+
+
+#10 NaN 찾아서 다른 값으로 변경하기(fillna)
+- how to check if there is Null or NaN
+df.shape #(전체 행 수, 전체 열 수)
+df.info() # null정보도 보여줌
+
+df.isna()
+df.isnull() #둘다 각 칸에 NaN인지 False, True로 보여줌
+
+- how to fill Null or NaN
+df["age"] = df["age"].fillna(0)
+
+df["age"].fillna(df.groupby("job")["age"].transform("median"), inplace=True) 
+                     #job별 age의 median값으로 Nan를 채워      #df에 바로 반영해
+                     
+                     
+#11 apply 함수, 다양한 예제로 활용해보기
+def extract_year(column):
+    return column.split("-")[0] #"-"로 구분하여 첫번째 것을 return
+df['year'] = df['yyyy-mm-dd'].apply(extract_year) #행 하나씩 함수 적용
+
+- passing keyword parameter to apply function
+def get_age(year, current_year):
+    return current_year - int(year) #year는 현재 string이니까
+df['age'] = df['year'].apply(get_age, current_year=2018)
+                       
+- passing multiple keyword parameter to apply function      
+def get_introduce(age, prefix, suffix): #age외의 이름은 맘대로
+    return prefix + str(age) + suffix
+df['introduce'] = df['age'].apply(get_introduce, prefix="I am ", suffix=" years old")
+
+- passing multiple columns to apply function
+def get_introduce2(row): #모든 행 받음
+    return "I was born in " + str(row.year) + " my age is "+str(row.age)
+df.introduce = df.apply(get_introduce2, axis=1) #row에 있는 모든 열 사용
+#df['introduce']랑 동일
+
+
+#12 map, applymap 함수, 다양한 예제로 활용해보기
+- map #하나의 컬럼에 적용
+def extract_year(date):
+    return date.split('-')[0]
+df['year'] = df['date'].map(extract_year) #apply와 동일
+
+job_list = [{'age': 20, 'job': 'student'},
+         {'age': 30, 'job': 'developer'},
+         {'age': 30, 'job': 'teacher'}]
+df = pd.DataFrame(job_list)
+df.job = df.job.map({"student":1,"developer":2,"teacher":3}) #숫자로 코딩
+
+- Applymap #모든 컬럼에 적용
+import numpy as np
+df = df.applymap(np.around) #모든 값에 반올림
+
+
+#13 unique, value_counts 컬럼 내 유니크한 값 뽑아내고 갯수 확인하기
+- unique() gives you unique values of the column in list format\
+df.job.unique()
+- value_counts() gives you the number of item for each unique columns
+df.job.value_counts()
+
+
+#14 두개의 데이터프레임 합치기 (concat, append)
+- 행을 합치기
+l1 = [{'name': 'John', 'job': "teacher"},
+      {'name': 'Nate', 'job': "student"},
+      {'name': 'Fred', 'job': "developer"}]
+
+l2 = [{'name': 'Ed', 'job': "dentist"},
+      {'name': 'Jack', 'job': "farmer"},
+      {'name': 'Ted', 'job': "designer"}]
+         
+df1 = pd.DataFrame(l1, columns = ['name', 'job'])
+df2 = pd.DataFrame(l2, columns = ['name', 'job'])
+
+pd.concat([df1,df2]) #두 개가 위아래로 붙는다, but 인덱스가 중복됨
+pd.concat([df1,df2], ignore_index = True) #해결
+
+df1.append(df2, ignore_index=True)
+
+
+- 열을 합치기
+l3 = [{'name': 'John', 'job': "teacher"},
+      {'name': 'Nate', 'job': "student"},
+      {'name': 'Jack', 'job': "developer"}]
+
+l4 = [{'age': 25, 'country': "U.S"},
+      {'age': 30, 'country': "U.K"},
+      {'age': 45, 'country': "Korea"}]
+
+df3 = pd.DataFrame(l3, columns = ['name', 'job'])
+df4 = pd.DataFrame(l4, columns = ['age', 'country'])
+
+pd.concat([df1, df2], axis=1, ignore_index=True) #열로 하니까 axis!!, 두 개가 옆으로 붙는다
+
+
+- 리스트를 데이터프레임으로 합치기
+label = [1,2,3,4,5]
+prediction = [1,2,2,4,4]
+
+comparison = pd.DataFrame(
+    {'label': label,
+     'prediction': prediction
+    })
+
+comparison
