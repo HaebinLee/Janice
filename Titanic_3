@@ -1,0 +1,33 @@
+#3 타이타닉 생존자 예측하기 - modeling, validation, testing
+
+Which classifier to use?
+1. KNN
+주변의 이웃을 보고 다수로 판단.
+ex. k=5인 경우 주변의 3명이 죽었으면 죽었다고 예측
+    k에 따라 달라질 수 있다!!
+    k를 변화시켜가며 정확도 살펴보기
+  
+2. Decision tree
+Feature를 이용하여 트리구축
+
+3. Random forest 
+여러개의 조금 작은 디시전 트리로 이루어짐
+ex. 9개의 feature가 있으니 세개 씩 세개의 트리를 구축한다고 해보자.
+    각 트리에서의 결과를 살펴보고 두개의 트리가 죽었다는 결과를 내면 죽었다고 결론!
+
+4. Naive Bayes
+확률사용
+ex. Feature가 Age Sex가 있다고 하면 P(survived|old,man)을 구함. 공식은 사진 
+
+
+
+
+
+# Importing Classifier Modules
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+
+import numpy as np
