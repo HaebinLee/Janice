@@ -193,6 +193,8 @@ train_data.shape, target.shape #(891,8), (891,)
 9-3. 데이터셋 저장
 train_data.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/train_data.csv', index=False)
 target.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/target.csv', index=False, header=False)
+train.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/train_new.csv', index=False)
+test.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/test_new.csv', index=False)
 
 숫자로 이루어진 Feature vector를  이제 분석!!!
 
