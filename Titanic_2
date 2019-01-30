@@ -8,10 +8,12 @@ since such representations facilitate processing and statistical analysis.
 
 Feature : 데이터 컬럼들
 머신러닝 실행을 위해 텍스트는 숫자로, NaN은 대체 필요
+간간히 .head()로 매핑 잘되었는지 확인필!!!
 
 1. 문제발생 원인 고찰
    sank from the bow of the ship where third class rooms located
    conclusion, Pclass is key feature for classifier
+   
    
 2. Name
    이름자체는 살고죽고에 큰 영향이 없다.
@@ -128,4 +130,65 @@ for dataset in train_test_data:
     dataset.loc[(dataset['Fare'] > 17) & (dataset['Fare'] <= 30), 'Fare'] = 1,
     dataset.loc[(dataset['Fare'] > 30) & (dataset['Fare'] <= 100), 'Fare'] = 2,
     dataset.loc[ dataset['Fare'] > 100, 'Fare'] = 3
+
+
+7. Cabin
+7-1. 종류가 많기 때문에 첫번째 글자를 뽑아서 보겠음
+for dataset in train_test_data:
+    dataset['Cabin'] = dataset['Cabin'].str[:1]
+
+7-2. 시각화
+Pclass1 = train[train['Pclass']==1]['Cabin'].value_counts()
+Pclass2 = train[train['Pclass']==2]['Cabin'].value_counts()
+Pclass3 = train[train['Pclass']==3]['Cabin'].value_counts()
+df = pd.DataFrame([Pclass1, Pclass2, Pclass3]) #각 좌석등급내 Cabin분포
+df.index = ['1st class','2nd class', '3rd class']
+df.plot(kind='bar',stacked=True, figsize=(10,5)) #1등급 ABCDET, 2등급 DEF, 3등급 EFG
+
+7-3. 숫자로 매핑
+Feature scaling : 다른 변수와 숫자 범위가 비슷하도록 소수점사용하여 맞춤
+
+cabin_mapping = {"A": 0, "B": 0.4, "C": 0.8, "D": 1.2, "E": 1.6, "F": 2, "G": 2.4, "T": 2.8}
+for dataset in train_test_data:
+    dataset['Cabin'] = dataset['Cabin'].map(cabin_mapping)
+    
+7-4. missing 처리
+Pclass별 로의 median으로 대체하자.
+
+# fill missing Fare with median fare for each Pclass
+train["Cabin"].fillna(train.groupby("Pclass")["Cabin"].transform("median"), inplace=True)
+test["Cabin"].fillna(test.groupby("Pclass")["Cabin"].transform("median"), inplace=True)
+
+
+8. FamilySize
+8-1. 혼자 탔는지, 동승자가 있는지를 보기위해 SibSp와 Parch변수를 합치기
+train["FamilySize"] = train["SibSp"] + train["Parch"] + 1
+test["FamilySize"] = test["SibSp"] + test["Parch"] + 1
+
+8-2. 시각화
+facet = sns.FacetGrid(train, hue="Survived",aspect=4)
+facet.map(sns.kdeplot,'FamilySize',shade= True)
+facet.set(xlim=(0, train['FamilySize'].max()))
+facet.add_legend()
+plt.xlim(0) #혼자 탄 사람이 많이 죽는다, 중요한 정보인듯!!!
+
+8-3. 매핑
+family_mapping = {1: 0, 2: 0.4, 3: 0.8, 4: 1.2, 5: 1.6, 6: 2, 7: 2.4, 8: 2.8, 9: 3.2, 10: 3.6, 11: 4}
+for dataset in train_test_data:
+    dataset['FamilySize'] = dataset['FamilySize'].map(family_mapping)
+    
+    
+9. 정리
+9-1. 필요없는 변수 빼기
+features_drop = ['Ticket', 'SibSp', 'Parch']
+train = train.drop(features_drop, axis=1)
+test = test.drop(features_drop, axis=1)
+train = train.drop(['PassengerId'], axis=1)
+
+9-2. 설명변수(숫자)만 들어간 데이터셋 만들고, 타겟변수 하나로 데이터셋 만들기
+train_data = train.drop('Survived', axis=1)
+target = train['Survived']
+train_data.shape, target.shape #(891,8), (891,)
+
+숫자로 이루어진 Feature vector를  이제 분석!!!
 
