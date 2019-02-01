@@ -1,0 +1,156 @@
+https://www.kaggle.com/c/bike-sharing-demand/data (크롬으로 접속)
+
+<Description>
+자전거 대여 기록 데이터로 count를 예측 (회귀)
+You are provided hourly rental data spanning two years. 
+For this competition, the training set is comprised of the first 19 days of each month, 
+while the test set is the 20th to the end of the month. 
+You must predict the total count of bikes rented during each hour covered by the test set, 
+using only information available prior to the rental period.
+
+<Data Fields>
+datetime - hourly date + timestamp  
+season -  1 = spring, 2 = summer, 3 = fall, 4 = winter 
+holiday - whether the day is considered a holiday
+workingday - whether the day is neither a weekend nor holiday
+weather - 1: Clear, Few clouds, Partly cloudy, Partly cloudy 
+2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist 
+3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds 
+4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog 
+temp - temperature in Celsius
+atemp - "feels like" temperature in Celsius
+humidity - relative humidity
+windspeed - wind speed
+casual - number of non-registered user rentals initiated
+registered - number of registered user rentals initiated
+count - number of total rentals
+
+----------------------------------------------------------------------------------
+#1 탐색적 데이터 분석(EDA)
+
+<환경준비>
+import pandas as pd
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+%matplotlib inline #노트북 안에 그래프를 그리기 위해
+plt.style.use('ggplot') #그래프에서 격자로 숫자 범위가 눈에 잘 띄도록 ggplot 스타일을 사용
+mpl.rcParams['axes.unicode_minus'] = False #그래프에서 마이너스 폰트 깨지는 문제에 대한 대처
+
+<data불러오고 null확인>
+train = pd.read_csv("C:/Users/uos/Desktop/online_study/Kaggle_bike/train.csv", parse_dates=["datetime"]) #datetime 타입으로 불러오기
+train.shape #(10886, 12)
+train.info()
+train.head() #windspeed에 0이 많다. 결측을 0으로 한 것이 아닌가 예상
+train.temp.describe() #temp변수 탐색
+train.isnull().sum() #null 있는 지
+import missingno as msno #프롬프트에서 pip install missingno하여 설치 후 사용
+msno.matrix(train, figsize=(12,5)) #null있는지 시각화
+
+<datetime변수 쪼개기>
+train["year"] = train["datetime"].dt.year
+train["month"] = train["datetime"].dt.month
+train["day"] = train["datetime"].dt.day
+train["hour"] = train["datetime"].dt.hour
+train["minute"] = train["datetime"].dt.minute
+train["second"] = train["datetime"].dt.second 
+train.shape #(10886, 18)
+
+<시각화1>
+figure, ((ax1,ax2,ax3), (ax4,ax5,ax6)) = plt.subplots(nrows=2, ncols=3) #import matplotlib.pyplot as plt 했던 거, 그림이 2*3으로 나오도록
+figure.set_size_inches(18,8)
+
+sns.barplot(data=train, x="year", y="count", ax=ax1) 
+sns.barplot(data=train, x="month", y="count", ax=ax2)
+sns.barplot(data=train, x="day", y="count", ax=ax3)
+sns.barplot(data=train, x="hour", y="count", ax=ax4)
+sns.barplot(data=train, x="minute", y="count", ax=ax5)
+sns.barplot(data=train, x="second", y="count", ax=ax6) #위에서 ax1 등으로 별명 지정하여 사용
+
+ax1.set(ylabel='Count',title="by year") #2011년보다 2012년에 많이 대여, 좀 더 홍보된 듯?
+ax2.set(xlabel='month',title="by month") #날씨가 따뜻한 계절에 많이 대여
+ax3.set(xlabel='day', title="by day") #train에는 19일까지만 있어서 feature로 사용하긴 어렵
+ax4.set(xlabel='hour', title="by hour") #출퇴근 시간에 많이 대여, 새벽엔 적음
+                                        #분, 초는 다 0으로 되어있어서 사용불가
+<시각화2>
+fig, axes = plt.subplots(nrows=2,ncols=2)
+fig.set_size_inches(12, 10)
+sns.boxplot(data=train,y="count",orient="v",ax=axes[0][0])
+sns.boxplot(data=train,y="count",x="season",orient="v",ax=axes[0][1])
+sns.boxplot(data=train,y="count",x="hour",orient="v",ax=axes[1][0])
+sns.boxplot(data=train,y="count",x="workingday",orient="v",ax=axes[1][1])
+
+axes[0][0].set(ylabel='Count',title="Count") #대여량이 180정도의 구간에 몰려있음
+axes[0][1].set(xlabel='Season', ylabel='Count',title="by season") #봄이 가장 적고, 여름과 가을이 가장 많다
+axes[1][0].set(xlabel='Hour Of The Day', ylabel='Count',title="by hour") 
+axes[1][1].set(xlabel='Working Day', ylabel='Count',title="by Working Day") #큰 차이 없어 보이지만 휴일에 더 많아보임?
+
+<요일변수 추가>
+train["dayofweek"] = train["datetime"].dt.dayofweek
+train.shape #(10886, 19)
+train["dayofweek"].value_counts() #요일별 대여량, 거의 비슷함
+
+<시간대별 대여량 시각화3>
+fig,(ax1,ax2,ax3,ax4,ax5)= plt.subplots(nrows=5) #그래프를 5행1열로 나오게
+fig.set_size_inches(18,25)
+
+sns.pointplot(data=train, x="hour", y="count", ax=ax1) #출퇴근시간에 많이
+sns.pointplot(data=train, x="hour", y="count", hue="workingday", ax=ax2) #휴일에는 오후시간에 많이
+sns.pointplot(data=train, x="hour", y="count", hue="dayofweek", ax=ax3) #평일에는 출퇴근시간, 주말(5,6)은 오후시간에 많이
+sns.pointplot(data=train, x="hour", y="count", hue="weather", ax=ax4) #날씨가 좋을 때 많이 빌림, 출퇴근시간 form은 유지
+sns.pointplot(data=train, x="hour", y="count", hue="season", ax=ax5) #가을>여름>겨울>봄 순으로 많이 빌림, 출퇴근시간 form은 유지
+
+<변수 간 연관관계 파악>
+corrMatt = train[["temp", "atemp", "casual", "registered", "humidity", "windspeed", "count"]]
+corrMatt = corrMatt.corr()
+print(corrMatt)
+
+mask = np.array(corrMatt) #매트릭스 어레이로, 한 행씩
+mask[np.tril_indices_from(mask)] = False
+
+fig, ax = plt.subplots()
+fig.set_size_inches(20,10)
+sns.heatmap(corrMatt, mask=mask, vmax=.8, square=True, annot=True) #온도, 습도, 풍속은 거의 연관관계가 없다
+                                                                   #count와 가장 관계가 높은 건 registered이지만 test데이터에 없어서 사용 곤란
+                                                                   #atemp와 temp는 0.98로 상관관계가 높지만 거의 같은 정보니까 둘 다 사용할 수는 없음
+
+<연관 높은 변수들 산점도>
+fig,(ax1,ax2,ax3) = plt.subplots(ncols=3)
+fig.set_size_inches(12, 5)
+sns.regplot(x="temp", y="count", data=train,ax=ax1)
+sns.regplot(x="windspeed", y="count", data=train,ax=ax2) #0에 많이 몰려있음, 아마 결측이 0으로 기록된 게 아닐까 추측
+sns.regplot(x="humidity", y="count", data=train,ax=ax3) #0과 100에 좀 있음
+
+<2011,2012년 데이터 쭉 이어붙이기>
+def concatenate_year_month(datetime):
+    return "{0}-{1}".format(datetime.year, datetime.month)
+train["year_month"] = train["datetime"].apply(concatenate_year_month)
+print(train.shape) #(10886, 20)
+train[["datetime", "year_month"]].head()
+
+fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+fig.set_size_inches(18, 4)
+sns.barplot(data=train, x="year", y="count", ax=ax1)
+sns.barplot(data=train, x="month", y="count", ax=ax2)
+
+fig, ax3 = plt.subplots(nrows=1, ncols=1)
+fig.set_size_inches(18, 4)
+sns.barplot(data=train, x="year_month", y="count", ax=ax3) #계속 늘어나는 추세
+
+<Outlier 제거>
+trainWithoutOutliers = train[np.abs(train["count"] - train["count"].mean()) <= (3*train["count"].std())] #작거나 같다 표시! True False로 리턴하여 True만 갖고옴, 즉 양 끝 제거 시도
+print(train.shape) #(10886, 20)
+print(trainWithoutOutliers.shape) #(10739, 20)
+
+figure, axes = plt.subplots(ncols=2, nrows=2)
+figure.set_size_inches(12, 10)
+sns.distplot(train["count"], ax=axes[0][0]) #0에 굉장히 많음
+stats.probplot(train["count"], dist='norm', fit=True, plot=axes[0][1])
+sns.distplot(np.log(trainWithoutOutliers["count"]), ax=axes[1][0]) #나아졌지만 오른쪽으로 치우쳐져있음
+stats.probplot(np.log1p(trainWithoutOutliers["count"]), dist='norm', fit=True, plot=axes[1][1])
+
+
+대부분의 기계학습은 종속변수가 normal 이어야 하기에 정규분포를 갖는 것이 바람직하다. 
+대안으로 outlier data를 제거하고 "count"변수에 로그를 씌워 변경해 봐도 정규분포를 따르지는 않지만 이전 그래프보다는 좀 더 자세히 표현하고 있다.
