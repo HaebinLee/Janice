@@ -1,0 +1,54 @@
+https://www.youtube.com/watch?v=95fCw-n5uWM&t=104s
+
+#2 캐글 머신러닝 사이킷런 랜덤포레스트 RMSLE소개
+
+Scikit-learn algorithm
+
+1. 분류(classification)
+ex. 타이타닉 생존여부
+2. 군집(clustering)
+3. 차원축소(dimensionality reduction)
+4. 회귀(regression)
+ex. 주어진 상황에서 자전거 대여량 예측(지도학습 : train에 count가 있다, 학습 시켜 모델을 만들 수 있다, 후에 test로 예측하고 평가)
+ex. random forest
+
+
+<Random forest>
+clf = RandomForestClassifier()
+clf.fit(X_train, y_train)
+          행렬     벡터
+y_pred = clf.predict(X_test_
+clf.score(X_test, y_test)
+           행렬    벡터
+           
+- Decision Trees
+속도가 빠르고 시각화하여 설명하기 쉽다
+
+- Random forest
+여러개의 Decision Tree를 기반으로 예측
+
+* overfitting : 너무 복잡, 일반화 어렵, feature가 많음
+  underfitting : 너무 단순한 모델, 다양성 반영 어렵
+  
+  
+<RMSLE>
+- 과소평가 된 항목에 패널티를 주기 위한
+- 오차를 제곱해서 평균한 갑의 제곱근
+- 작을 수록 정밀도가 높다 (0에 가까울 수록 좋음)
+- p : predicted value
+- a : actual value
+
+
+<Cross Validation>
+- KFold 교차검증
+데이터를 K개로 나누고 번갈아가며 test set이 되어 모델 학습 수행, 정확도의 평균을 냄
+
+
+
+           
+           
+
+
+
+
+
