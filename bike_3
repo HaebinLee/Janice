@@ -210,3 +210,6 @@ submission["count"] = predictions
 print(submission.shape) #(6493, 2)
 
 submission.to_csv("C:/Users/uos/Desktop/online_study/Kaggle_bike/Score_{0:.5f}_submission.csv".format(score), index=False) #Score값을 제목에 넣어서 구분되도록
+
+=> 0.41915, 437등! 
+437/3251 #대략 상위 13퍼센트
