@@ -1,0 +1,172 @@
+#3 캐글 머신러닝 랜덤포레스트만으로 경진대회에 참여하기
+
+<Setting>
+import pandas as pd
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+
+%matplotlib inline #노트북 안에 그래프를 그리기 위해
+mpl.rcParams['axes.unicode_minus'] = False #그래프에서 마이너스 폰트 깨지는 문제에 대한 대처
+
+train = pd.read_csv("C:/Users/uos/Desktop/online_study/Kaggle_bike/train.csv", parse_dates=["datetime"])
+train.shape #(10886, 12)
+test = pd.read_csv("C:/Users/uos/Desktop/online_study/Kaggle_bike/test.csv", parse_dates=["datetime"])
+test.shape #(6493, 9)
+
+
+<Feature Engineering>
+1. datetime 세분화 하기
+train["year"] = train["datetime"].dt.year
+train["month"] = train["datetime"].dt.month
+train["day"] = train["datetime"].dt.day
+train["hour"] = train["datetime"].dt.hour
+train["minute"] = train["datetime"].dt.minute
+train["second"] = train["datetime"].dt.second
+train["dayofweek"] = train["datetime"].dt.dayofweek
+train.shape #(10886, 19)
+
+test["year"] = test["datetime"].dt.year
+test["month"] = test["datetime"].dt.month
+test["day"] = test["datetime"].dt.day
+test["hour"] = test["datetime"].dt.hour
+test["minute"] = test["datetime"].dt.minute
+test["second"] = test["datetime"].dt.second
+test["dayofweek"] = test["datetime"].dt.dayofweek
+test.shape #(6493, 16)
+
+
+2. 풍속에 잘못된 데이터 처리
+2-1. 시각화
+fig, axes = plt.subplots(nrows=2)
+fig.set_size_inches(18,10)
+
+plt.sca(axes[0])
+plt.xticks(rotation=30, ha='left')
+axes[0].set(ylabel='Count',title="train windspeed")
+sns.countplot(data=train, x="windspeed", ax=axes[0]) #0이 매우 많음
+
+plt.sca(axes[1])
+plt.xticks(rotation=30, ha='right')
+axes[1].set(ylabel='Count',title="test windspeed")
+sns.countplot(data=test, x="windspeed", ax=axes[1]) #0이 매우 많음
+
+2-2. 0값 대체를 위한 머신러닝
+from sklearn.ensemble import RandomForestClassifier
+def predict_windspeed(data):
+    # 풍속이 0인것과 아닌 것을 나누어 준다.
+    dataWind0 = data.loc[data['windspeed'] == 0]
+    dataWindNot0 = data.loc[data['windspeed'] != 0]
+    
+    # 풍속을 예측할 피처를 선택한다.
+    wCol = ["season", "weather", "humidity", "month", "temp", "year", "atemp"]
+
+    # 0이 아닌 풍속 값의 타입을 스트링으로 바꿔준다, y여서?
+    dataWindNot0["windspeed"] = dataWindNot0["windspeed"].astype("str")
+
+    # 랜덤포레스트 분류기를 사용한다.
+    rfModel_wind = RandomForestClassifier()
+
+    # 풍속이 0이 아닌 데이터셋으로 학습시킨다.
+    rfModel_wind.fit(dataWindNot0[wCol], dataWindNot0["windspeed"])
+
+    # 학습한 값을 바탕으로 풍속이 0인 데이터셋의 풍속을 예측한다.
+    wind0Values = rfModel_wind.predict(X = dataWind0[wCol])
+
+    # 값을 다 예측 후 비교해 보기 위해
+    # 예측한 값을 넣어 줄 데이터 프레임을 새로 만든다.
+    predictWind0 = dataWind0
+    predictWindNot0 = dataWindNot0
+
+    # 값이 0으로 기록 된 풍속에 대해 예측한 값을 넣어준다.
+    predictWind0["windspeed"] = wind0Values
+
+    # dataWindNot0에, 예측한 값이 있는 predictWind0 데이터프레임을 합쳐서 data를 완성한다.
+    data = predictWindNot0.append(predictWind0)
+
+    # 풍속의 데이터타입을 float으로 지정해 준다.
+    data["windspeed"] = data["windspeed"].astype("float")
+
+    data.reset_index(inplace=True)
+    data.drop('index', inplace=True, axis=1)
+    
+    return data
+
+2-3. 0값 대체
+train = predict_windspeed(train) #위에서 만든 함수 이용
+
+# 데이터 시각화
+fig, ax1 = plt.subplots()
+fig.set_size_inches(18,6)
+
+plt.sca(ax1)
+plt.xticks(rotation=30, ha='right') #가로축 레이블 값이 30도 기울어져서 겹침 방지
+ax1.set(ylabel='Count',title="train windspeed")
+sns.countplot(data=train, x="windspeed", ax=ax1) #0인 데이터 사라짐
+
+
+3. Feature Selection
+- 신호와 잡음을 구분해야 한다.
+- 피처가 많다고 해서 무조건 좋은 성능을 내지 않는다.
+- 피처를 하나씩 추가하고 변경해 가면서 성능이 좋지 않은 피처는 제거하도록 한다.
+
+3-1. 연속형 feature와 범주형 feature 
+- 연속형 ["temp","humidity","windspeed","atemp"]
+
+- 범주형 feature의 type을 category로
+categorical_feature_names = ["season","holiday","workingday","weather","dayofweek","month","year","hour"]
+for var in categorical_feature_names:
+    train[var] = train[var].astype("category")
+    test[var] = test[var].astype("category")
+    
+3-2. Feature 선택해서 새로운 데이터셋 만들기 
+- EDA를 기반으로 month, day, minute, second, datetime, casual, registered, count 뺌
+
+feature_names = ["season", "weather", "temp", "atemp", "humidity", "windspeed", "year", "hour", "dayofweek", "holiday", "workingday"]
+
+X_train = train[feature_names]
+print(X_train.shape) #(10886, 11)
+
+X_test = test[feature_names]
+print(X_test.shape) #(6493, 11)
+
+3-3. y 데이터셋 만들기
+label_name = "count"
+y_train = train[label_name]
+print(y_train.shape #(10886,)
+
+
+4. Score : RMSLE구현
+from sklearn.metrics import make_scorer
+
+def rmsle(predicted_values, actual_values):
+    # 넘파이로 배열 형태로 바꿔준다.
+    predicted_values = np.array(predicted_values)
+    actual_values = np.array(actual_values)
+    
+    # 예측값과 실제 값에 1을 더하고 로그를 씌워준다.
+    log_predict = np.log(predicted_values + 1)
+    log_actual = np.log(actual_values + 1)
+    
+    # 위에서 계산한 예측값에서 실제값을 빼주고 제곱을 해준다.
+    difference = log_predict - log_actual
+    # difference = (log_predict - log_actual) ** 2
+    difference = np.square(difference)
+    
+    # 평균을 낸다.
+    mean_difference = difference.mean()
+    
+    # 다시 루트를 씌운다.
+    score = np.sqrt(mean_difference)
+    
+    return score
+
+rmsle_scorer = make_scorer(rmsle)
+rmsle_scorer
+
+
+5. 분석실시
+5-1. Cross Validation 교차검증
