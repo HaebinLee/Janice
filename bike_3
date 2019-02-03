@@ -168,5 +168,45 @@ rmsle_scorer = make_scorer(rmsle)
 rmsle_scorer
 
 
-5. 분석실시
+5. 분석준비
 5-1. Cross Validation 교차검증
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+k_fold = KFold(n_splits=10, shuffle=True, random_state=0)
+
+5-2. RandomForest
+from sklearn.ensemble import RandomForestRegressor
+max_depth_list = []
+model = RandomForestRegressor(n_estimators=100, #높을 수록 좋은 성능을 내지만 시간이 오래걸림
+                              n_jobs=-1,
+                              random_state=0)
+model
+
+%time score = cross_val_score(model, X_train, y_train, cv=k_fold, scoring=rmsle_scorer) #오래걸릴 수 있음, time 찍어보기
+score = score.mean()
+print("Score= {0:.5f}".format(score)) # 0에 근접할수록 좋은 데이터
+
+
+6. Train
+model.fit(X_train, y_train) # 학습시킴, 피팅(옷을 맞출 때 사용하는 피팅을 생각함) - 피처와 레이블을 넣어주면 알아서 학습을 함
+
+
+7. Prediction
+predictions = model.predict(X_test)
+print(predictions.shape) #(6493,)
+
+7-1. 시각화
+fig,(ax1,ax2)= plt.subplots(ncols=2)
+fig.set_size_inches(12,5)
+sns.distplot(y_train,ax=ax1,bins=50)
+ax1.set(title="train")
+sns.distplot(predictions,ax=ax2,bins=50)
+ax2.set(title="test") #test에도 count생김, train과 데이터모양 나름 비슷
+
+
+8. Submission
+submission = pd.read_csv("C:/Users/uos/Desktop/online_study/Kaggle_bike/sampleSubmission.csv")
+submission["count"] = predictions
+print(submission.shape) #(6493, 2)
+
+submission.to_csv("C:/Users/uos/Desktop/online_study/Kaggle_bike/Score_{0:.5f}_submission.csv".format(score), index=False) #Score값을 제목에 넣어서 구분되도록
