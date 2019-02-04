@@ -139,7 +139,7 @@ y_train = train[label_name]
 print(y_train.shape #(10886,)
 
 
-4. Score : RMSLE구현
+4. Score : RMSLE구현 (밑에서 씀!!!)
 from sklearn.metrics import make_scorer
 
 def rmsle(predicted_values, actual_values):
@@ -182,7 +182,7 @@ model = RandomForestRegressor(n_estimators=100, #높을 수록 좋은 성능을 
                               random_state=0)
 model
 
-%time score = cross_val_score(model, X_train, y_train, cv=k_fold, scoring=rmsle_scorer) #오래걸릴 수 있음, time 찍어보기
+%time score = cross_val_score(model, X_train, y_train, cv=k_fold, scoring=rmsle_scorer) #오래 걸릴 수 있으므로 time 찍어보기 + 점수계산
 score = score.mean()
 print("Score= {0:.5f}".format(score)) # 0에 근접할수록 좋은 데이터
 
