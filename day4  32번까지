@@ -1,0 +1,45 @@
+#28 for문 중첩
+- File, New File : editor 모드 
+  코딩하고 Run, Run Module
+- 중첩할 때 들여쓰기 주의
+ 
+ 
+#29 Comprehension
+- 긴 코드를 한 줄로 쓰기
+- 많이 사용됨
+
+numbers=[1,2,3,4,5,6,7,8,9,10]
+
+odd_numbers=[]
+for number in numbers:
+    if number % 2 ==1:
+        odd_numbers.append(number)
+print(odd_numbers)
+
+odd_numbers=[number for number in numbers if number % 2 ==1]
+print(odd_numbers)
+
+
+#30 할당 연산자 (Assign)
+- 변수 = 값
+- 같은 변수 이름 이용하여 재할당 가능
+- count = count+1
+  count += 1
+- count = count -1
+  count -= 1
+- += -= *= /= 복합할당연산자
+
+#31 산술 연산자 (Arithmetic)
+- 산술 연산자 + - * /
+- 특수 연산자 
+  ** 제곱
+  // 나눈 몫
+  %  나눈 나머지
+
+#32 %로 홀짝 구분하기
+numbers=[1,2,3,4,5,6,7,8,9,10]
+for number in numbers:
+    if number % 2 ==1:
+        print(number, "홀수")
+    else:
+        print(number, "짝수")

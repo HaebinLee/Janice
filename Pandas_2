@@ -1,0 +1,45 @@
+#3 데이터프레임 
+1-1 dictionary를 가지고 있는 List로 데이터프레임(df) 만들기
+  이름 = [
+     {'키1': '값', '키2': '값'},
+     {'키1': '값', '키2': '값'}
+  ]
+  df = pd.DataFrame(이름) 딕셔너리는 키 값의 순서가 입력한 대로 들어간다는 보장 없음
+  df = df[['원하는', '열이름']]으로 지정가능
+  
+ 1-2 원하는 컬럼 순서대로 한번에 만들기
+   from collections import OrderedDict
+   이름 = OrderedDict(
+      [
+       ('키1', ['값', '값']),
+       ('키2', ['값', '값'])
+      ]
+    )
+    df = pd.DataFrame.from_dict(이름)
+    
+ 2-1 리스트로 df 생성하기
+  이름 = [
+    ['값', 값],
+    ['값', 값]
+  ]
+  col = ['c1', 'c2']
+  df = pd.DataFrame.from_records(이름, columns = col)
+  
+  2-2 열 이름도 같이 한번에 만들기
+   이름 = [
+     ['c1', ['값', 값]],
+     ['c2', ['값', 값]]
+   ]
+   df = pd.DataFrame.from_items(이름)
+   
+   * from_items는 많이 쓰이지 않아 앞으로 사라질 예정
+
+  
+  #4 데이터프레임 파일로 저장하기 (to_csv)
+  df.to_csv('이름.csv', index=True, header=True, na_rep = '-')
+  - index, header는 True가 디폴트
+  - 데이터프레임에 None 값은 na로 비어있게 된다. 위는 na를 -로 채우라는 명령
+  
+  
+  
+  

@@ -1,0 +1,21 @@
+#1 팬더스, 데이터프레임, 시리즈 알아보기
+- Shift+Enter로 실행
+
+- import pandas as pd
+- pb. tab누르면 pandas에 관련된 함수가 나옴
+- pb.read_csv(' ') csv 읽어오기
+- 읽어오면 2D array 엑셀과 비슷
+- 각 컬럼은 시리즈, 시리즈로 구성된 것이 dataframe
+- 즉 컬럼의 type은 series
+- type(dataframe이름.column이름)하면 pandas.core.series.Series
+
+
+#2 파일에서 데이터 불러오기
+- !conda list | findstr pandas : 컴퓨터에 pandas가 깔려 있는 지 확인
+- pb.read_csv 쉼표로 구분된 txt파일도 읽어올 수 있음
+- tab으로 구분된 파일은 read_csv(' ', delimiter = '\t')
+
+- 열 이름이 없으면 read_csv(' ', header = None) 0 1 2 로 열이름 배정
+- dataframe이름.columns = [' ',' '] 이름 설정
+
+- read_csv(' ', header = None, names = [' ',' ']) 한번에 처리
