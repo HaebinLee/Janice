@@ -1,0 +1,70 @@
+https://www.youtube.com/watch?v=kUzlyp5_PPs
+
+1. 시군구별 면적당 가격의 변화를 살펴보자 (#서울특별시)
+
+이전에 1개의 시군구의 거래량이 2214개, 3개의 시군구 거래량은 17420개
+
+
+<전처리>
+
+데이터를 사용하기 전에 처리
+(값의 형태변경, 새로운 값을 계산하는 등의 작업)
+
+- 일단 데이터 형태를 보기!!
+- 숫자여야 하는게 string으로 되어있는데 많음.
+- 코드 같은 건 그룹화
+- 숫자로 계산이 되면 골치아픈 년도, 월, 지역코드는 string으로
+  df['열이름'] = df['열이름'].astype(str)
+ 
+- df['열이름'] = df['열이름'].apply(lambda x: int(x.replace(',', '')))
+                             #apply(열 하나씩 작업) x(선택된 컬럼)의 ,를 없애주고 int로 바꿔라!
+- df['평수'] = df['전용면적'].apply(lambda x: x / float(3.30578)
+  #평수는 전용면적을 3.30578로 나눈 값
+  
+- date 파이썬 제공 형식으로 변경
+  df['date'] = df['date'].astype(str)
+  df['date'] = pd.to_datetime(df['date'], format="%Y%m") #201701
+
+- df['시군구'] = df['시'] + ' ' + df['구']  => 서울특별시 종로구 처럼 생성!
+
+
+시군구별 면적당 가격
+df_grp = df.groupby(['시군구', 'date']).mean()
+                   #"언제의 시군구"에서 가격을 봐야하니까!
+df_grp = df_grp.reset_index()
+                #앞 컬럼이 인덱스로 되지 않게 하려고
+   
+   
+<시각화>
+
+인덱스는 날짜, x축이 될거니까
+각 시군구가 컬럼
+채워지는 내용은 면적당 거래액
+df.pivot = df_grp.pivot(index='date', columns='시군구', values='면적거래액')
+
+import matplotlib.pyplot as plt
+ax = df_pivot.plot(grid=True, marker='v', title=u'시군구별 면적당 거래액')
+                   #y축 값 가이드 선 보여주기
+ax.set_ylabel(u'면적당거래액(만원)')
+ax.set_xlabel(u'년월')
+plt.savefig('이름.png', dpi=300) #저장도 가능!
+                        #해상도 조정!
+                              
+차트는 데이터를 그래픽화 시켰기 때문에 다양한 차트로 확인을 하는 게 데이터분석에 필수
+
+
+데이터 추세를 확인하는 것도 좋지만, 항상 확인을 해야할 내용은 이 데이터에 오류가 없는지!
+(평균, 최소, 최대값, 중간값, 표준편차를 꼭 확인)
+
+df_pivot.describe() #각 컬럼값에 대한 요약정보 보기!
+#데이터프레임이름
+
+boxplot은 데이터 집합의 (mean, std, max, min, etc.)와 통계적으로 이상치(outlier)를 확인시 사용
+데이터 추세차트와 함께 describe의 테이블을 함께 제공하자!!
+from pandas.plotting import table
+fig, ax = plt.subplots(1,1)
+table(ax, np.round(df_pivot.reset_index().describe(),2), loc='right')
+     #차트
+ax.set_ylabel(u'면적당거래액(만원)')
+ax.set_xlabel(u'시군구')
+df_pivot.plot.box(ax=ax, grid=True, title=u'면적당거래액 Boxplot')
