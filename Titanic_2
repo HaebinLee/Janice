@@ -1,0 +1,201 @@
+#2 Feature Engineering
+Feature engineering is the process of using domain knowledge of the data
+to create features (feature vectors) that make machine learning algorithms work.
+
+feature vector is an n-dimensional vector of numerical features that represent some object.
+Many algorithms in machine learning require a numerical representation of objects,
+since such representations facilitate processing and statistical analysis.
+
+Feature : 데이터 컬럼들
+머신러닝 실행을 위해 텍스트는 숫자로, NaN은 대체 필요
+간간히 .head()로 매핑 잘되었는지 확인필!!!
+
+1. 문제발생 원인 고찰
+   sank from the bow of the ship where third class rooms located
+   conclusion, Pclass is key feature for classifier
+   
+   
+2. Name
+   이름자체는 살고죽고에 큰 영향이 없다.
+   하지만 Title, 즉 Mr. Mrs. 등은 중요한 정보를 담고 있을 수 있으므로 이것만 빼내고 Name 변수를 삭제한다. 
+   
+2-1. Train과 Test 데이터를 합친 후 같이 변형하기
+     train_test_data = [train, test] # combining train and test dataset
+     
+2-2. Title 빼내기
+     for dataset in train_test_data:
+         dataset['Title'] = dataset['Name'].str.extract(' ([A-Za-z]+)\.', expand=False)
+         
+2-3. Mr : 0, Miss : 1, Mrs : 2, others : 3로 매핑
+     title_mapping = {"Mr": 0, "Miss": 1, "Mrs": 2, 
+                   "Master": 3, "Dr": 3, "Rev": 3, "Col": 3, "Major": 3, "Mlle": 3,"Countess": 3,
+                   "Ms": 3, "Lady": 3, "Jonkheer": 3, "Don": 3, "Dona" : 3, "Mme": 3,"Capt": 3,"Sir": 3 }
+     for dataset in train_test_data:
+         dataset['Title'] = dataset['Title'].map(title_mapping)
+         
+2-4. Title 탐색
+     bar_chart('Title') #Mr이 많이 죽었다
+     
+2-5. Name 삭제
+
+
+3. Sex
+3-1. Male : 0, Female : 1로 매핑
+     sex_mapping = {"male": 0, "female": 1}
+     for dataset in train_test_data:
+         dataset['Sex'] = dataset['Sex'].map(sex_mapping)
+3-2. Sex 탐색
+     bar_chart('Sex') #남자가 많이 죽었다
+     
+     
+4. Age
+missing data가 있다.
+Title별 로의 median으로 대체하자.
+4-1. missing 처리
+     train["Age"].fillna(train.groupby("Title")["Age"].transform("median"), inplace=True)
+     test["Age"].fillna(test.groupby("Title")["Age"].transform("median"), inplace=True)
+ 
+4-2. 시각화
+facet = sns.FacetGrid(train, hue="Survived",aspect=2) #hue : 각 그래프를 그릴 기준, aspect : 그래프 폭  
+facet.map(sns.kdeplot,'Age',shade= True)
+facet.set(xlim=(0, train['Age'].max()))
+facet.add_legend() #범례 노출
+plt.show()
+
+facet = sns.FacetGrid(train, hue="Survived",aspect=4)
+facet.map(sns.kdeplot,'Age',shade= True)
+facet.set(xlim=(0, train['Age'].max()))
+facet.add_legend()
+plt.xlim(0, 20) #설정한 나이 대 별로 잘라서 볼 수 있다
+
+=> (0,20)  많이 산다
+   (20,30) 24정도부터 많이 죽는다
+   (30,40) 34정도부터 많이 산다
+   (40,60) 미세하게 많이 산다
+   (60, 80.0) 많이 죽지만 사람 수 자체가 적다
+   
+4-3. Binning
+Converting Numerical Age to Categorical Variable, 변수의 의미를 좀 더 잘보기 위하여
+child : 0, young : 1, adult : 2, mid-age : 3, senior : 4로 매핑
+
+for dataset in train_test_data:
+    dataset.loc[ dataset['Age'] <= 16, 'Age'] = 0,
+    dataset.loc[(dataset['Age'] > 16) & (dataset['Age'] <= 26), 'Age'] = 1,
+    dataset.loc[(dataset['Age'] > 26) & (dataset['Age'] <= 36), 'Age'] = 2,
+    dataset.loc[(dataset['Age'] > 36) & (dataset['Age'] <= 62), 'Age'] = 3,
+    dataset.loc[ dataset['Age'] > 62, 'Age'] = 4
+bar_chart('Age') #0은 비슷, 1,2,3은 많이 죽음, 4는 거의 다 죽음
+
+
+5. Embarked
+5-1. 부자동네에서 탔으면 1등석을 탔을 가능성이 높다?
+Pclass1 = train[train['Pclass']==1]['Embarked'].value_counts()
+Pclass2 = train[train['Pclass']==2]['Embarked'].value_counts()
+Pclass3 = train[train['Pclass']==3]['Embarked'].value_counts()
+df = pd.DataFrame([Pclass1, Pclass2, Pclass3])
+df.index = ['1st class','2nd class', '3rd class']
+df.plot(kind='bar',stacked=True, figsize=(10,5)) #모든 좌석등급의 절반 이상이 S에서 탑승 : missing데이터를 S로 대체하자
+                                                  Q에서 탄 사람들은 거의 다 3등급
+
+5-2. missing 처리
+for dataset in train_test_data:
+    dataset['Embarked'] = dataset['Embarked'].fillna('S')
+
+5-3. S : 0, C : 1, Q : 2로 매핑
+embarked_mapping = {"S": 0, "C": 1, "Q": 2}
+for dataset in train_test_data:
+    dataset['Embarked'] = dataset['Embarked'].map(embarked_mapping)
+     
+     
+6. Fare
+Pclass별 로의 median으로 대체하자.
+
+6-1. missing 처리
+# fill missing Fare with median fare for each Pclass
+train["Fare"].fillna(train.groupby("Pclass")["Fare"].transform("median"), inplace=True)
+test["Fare"].fillna(test.groupby("Pclass")["Fare"].transform("median"), inplace=True)
+train.head(50)
+
+6-2. 시각화
+facet = sns.FacetGrid(train, hue="Survived",aspect=4)
+facet.map(sns.kdeplot,'Fare',shade= True)
+facet.set(xlim=(0, train['Fare'].max()))
+facet.add_legend()
+plt.show()
+=> 가격이 낮으면 많이 죽는다
+
+6-3. Binning
+for dataset in train_test_data:
+    dataset.loc[ dataset['Fare'] <= 17, 'Fare'] = 0,
+    dataset.loc[(dataset['Fare'] > 17) & (dataset['Fare'] <= 30), 'Fare'] = 1,
+    dataset.loc[(dataset['Fare'] > 30) & (dataset['Fare'] <= 100), 'Fare'] = 2,
+    dataset.loc[ dataset['Fare'] > 100, 'Fare'] = 3
+
+
+7. Cabin
+7-1. 종류가 많기 때문에 첫번째 글자를 뽑아서 보겠음
+for dataset in train_test_data:
+    dataset['Cabin'] = dataset['Cabin'].str[:1]
+
+7-2. 시각화
+Pclass1 = train[train['Pclass']==1]['Cabin'].value_counts()
+Pclass2 = train[train['Pclass']==2]['Cabin'].value_counts()
+Pclass3 = train[train['Pclass']==3]['Cabin'].value_counts()
+df = pd.DataFrame([Pclass1, Pclass2, Pclass3]) #각 좌석등급내 Cabin분포
+df.index = ['1st class','2nd class', '3rd class']
+df.plot(kind='bar',stacked=True, figsize=(10,5)) #1등급 ABCDET, 2등급 DEF, 3등급 EFG
+
+7-3. 숫자로 매핑
+Feature scaling : 다른 변수와 숫자 범위가 비슷하도록 소수점사용하여 맞춤
+
+cabin_mapping = {"A": 0, "B": 0.4, "C": 0.8, "D": 1.2, "E": 1.6, "F": 2, "G": 2.4, "T": 2.8}
+for dataset in train_test_data:
+    dataset['Cabin'] = dataset['Cabin'].map(cabin_mapping)
+    
+7-4. missing 처리
+Pclass별 로의 median으로 대체하자.
+
+# fill missing Fare with median fare for each Pclass
+train["Cabin"].fillna(train.groupby("Pclass")["Cabin"].transform("median"), inplace=True)
+test["Cabin"].fillna(test.groupby("Pclass")["Cabin"].transform("median"), inplace=True)
+
+
+8. FamilySize
+8-1. 혼자 탔는지, 동승자가 있는지를 보기위해 SibSp와 Parch변수를 합치기
+train["FamilySize"] = train["SibSp"] + train["Parch"] + 1
+test["FamilySize"] = test["SibSp"] + test["Parch"] + 1
+
+8-2. 시각화
+facet = sns.FacetGrid(train, hue="Survived",aspect=4)
+facet.map(sns.kdeplot,'FamilySize',shade= True)
+facet.set(xlim=(0, train['FamilySize'].max()))
+facet.add_legend()
+plt.xlim(0) #혼자 탄 사람이 많이 죽는다, 중요한 정보인듯!!!
+
+8-3. 매핑
+family_mapping = {1: 0, 2: 0.4, 3: 0.8, 4: 1.2, 5: 1.6, 6: 2, 7: 2.4, 8: 2.8, 9: 3.2, 10: 3.6, 11: 4}
+for dataset in train_test_data:
+    dataset['FamilySize'] = dataset['FamilySize'].map(family_mapping)
+    
+    
+9. 정리
+9-1. 필요없는 변수 빼기
+features_drop = ['Ticket', 'SibSp', 'Parch']
+train = train.drop(features_drop, axis=1)
+test = test.drop(features_drop, axis=1)
+train = train.drop(['PassengerId'], axis=1)
+
+9-2. 설명변수(숫자)만 들어간 데이터셋 만들고, 타겟변수 하나로 데이터셋 만들기
+train_data = train.drop('Survived', axis=1)
+target = train['Survived']
+train_data.shape, target.shape #(891,8), (891,)
+
+9-3. 데이터셋 저장
+train_data.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/train_data.csv', index=False)
+target.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/target.csv', index=False, header=False)
+train.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/train_new.csv', index=False)
+test.to_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/test_new.csv', index=False)
+
+숫자로 이루어진 Feature vector를  이제 분석!!!
+
+

@@ -1,0 +1,57 @@
+#1 데이터분석
+
+https://www.kaggle.com/c/titanic
+
+In this challenge, we ask you to complete the analysis of what sorts of people were likely to survive. 
+In particular, we ask you to apply the tools of machine learning to predict which passengers survived the tragedy.\
+(git hub에서는 clone or download 버튼 누르면 다운로드 가능)
+
+Data Dictionary
+Survived: 0 = No, 1 = Yes
+pclass: Ticket class 1 = 1st, 2 = 2nd, 3 = 3rd
+sibsp: # of siblings / spouses aboard the Titanic #같이 탄 친인척 수
+parch: # of parents / children aboard the Titanic #같이 탄 부모 or 자식
+ticket: Ticket number
+cabin: Cabin number #NaN 존재
+embarked: Port of Embarkation C = Cherbourg, Q = Queenstown, S = Southampton #어느 선착장에서 탔는지
+
+train : 891*12
+test : 418*11
+
+--------------------------------------------------------------------------------------
+1. 데이터 준비 및 파악
+import pandas as pd
+train = pd.read_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/train.csv')
+test = pd.read_csv('C:/Users/uos/Desktop/online_study/Kaggle_Titanic/test.csv')
+
+train.head()
+test.head() #survived 없음. 알아낼 목표!
+
+train.shape
+test.shape
+
+train.info() #null 여부 알 수 있음
+test.info()
+train.isnull().sum()
+test.isnull().sum() #대체로 age와 cabin 데이터가 꽤 유실됨
+
+2. 데이터 시각화
+import matplotlib.pyplot as plt
+%matplotlib inline
+import seaborn as sns
+sns.set() #setting seaborn default for plots
+
+def bar_chart(feature):
+    survived = train[train['Survived']==1][feature].value_counts()
+    dead = train[train['Survived']==0][feature].value_counts()
+    df = pd.DataFrame([survived,dead])
+    df.index = ['Survived','Dead']
+    df.plot(kind='bar',stacked=True, figsize=(10,5)) #feature에 따라 살았는지 죽었는지 bar_chart
+    
+bar_chart('Sex') #상대적으로 남자가 더 많이 죽음, 여자가 살아날 확률이 더 높다
+bar_chart('Pclass') #1등급이 더 많이 살아남는다, 3등급이 많이 죽는다
+bar_chart('SibSp')
+bar_chart('Parch') #같이 탄 사람이 많으면 더 많이 살아남는다, 혼자 타면 많이 죽는다
+bar_chart('Embarked') #유익한 정보는 딱히
+
+
